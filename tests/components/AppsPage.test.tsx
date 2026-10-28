@@ -723,7 +723,11 @@ describe("AppsPage concurrent CLI upgrades", () => {
       within(
         screen.getByRole("region", { name: "appsPage.sectionInstalled" }),
       ).getAllByRole("button", { name: "appsPage.dragHandle" }),
-    ).toHaveLength(APP_IDS.length - 2);
+    ).toHaveLength(
+      // hermes 和 codex 未安装；CodeBuddy / WorkBuddy 没有工具行
+      APP_IDS.filter((app) => app !== "codebuddy" && app !== "workbuddy")
+        .length - 2,
+    );
     expect(
       within(
         screen.getByRole("region", { name: "appsPage.sectionNotInstalled" }),

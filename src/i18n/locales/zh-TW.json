@@ -5077,5 +5077,23 @@
       "description": "設定請求網址、API Key 和模型。現有的自訂供應商會自動顯示在這裡。"
     },
     "deleteSessionHint": "請在 DeepSeek Harness 中刪除此工作階段，以保持原生歷史記錄一致。"
+  },
+  "codebuddy": {
+    "empty": {
+      "title": "新增 CodeBuddy 供應商",
+      "description": "設定 OpenAI 相容的請求位址、API Key 和模型，寫入 ~/.codebuddy/models.json 作為自訂模型；你自己在裡面新增的模型不會被更動。"
+    },
+    "presets": {
+      "selfHostedGateway": "自建閘道"
+    }
+  },
+  "workbuddy": {
+    "empty": {
+      "title": "新增 WorkBuddy 供應商",
+      "description": "設定 OpenAI 相容的請求位址、API Key 和模型，寫入 ~/.workbuddy/models.json 作為自訂模型；你自己在裡面新增的模型不會被更動。"
+    },
+    "presets": {
+      "selfHostedGateway": "自建閘道"
+    }
   }
 }

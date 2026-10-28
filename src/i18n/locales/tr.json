@@ -5032,5 +5032,23 @@
       "description": "Bir uç nokta, API anahtarı ve modeller yapılandırın. Mevcut özel sağlayıcılar burada otomatik olarak görünür."
     },
     "deleteSessionHint": "Geçmişin tutarlı kalması için bu oturumu DeepSeek Harness içinde silin."
+  },
+  "codebuddy": {
+    "empty": {
+      "title": "CodeBuddy sağlayıcısı ekle",
+      "description": "OpenAI uyumlu bir uç nokta, API anahtarı ve modeller ekleyin. ~/.codebuddy/models.json dosyasına özel model olarak yazılır; oradaki kendi girdileriniz değiştirilmez."
+    },
+    "presets": {
+      "selfHostedGateway": "Kendi Barındırılan Ağ Geçidi"
+    }
+  },
+  "workbuddy": {
+    "empty": {
+      "title": "WorkBuddy sağlayıcısı ekle",
+      "description": "OpenAI uyumlu bir uç nokta, API anahtarı ve modeller ekleyin. ~/.workbuddy/models.json dosyasına özel model olarak yazılır; oradaki kendi girdileriniz değiştirilmez."
+    },
+    "presets": {
+      "selfHostedGateway": "Kendi Barındırılan Ağ Geçidi"
+    }
   }
 }

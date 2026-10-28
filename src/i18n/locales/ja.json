@@ -5076,5 +5076,23 @@
       "description": "接続先 URL、API キー、モデルを設定します。既存のカスタムプロバイダーは自動的にここに表示されます。"
     },
     "deleteSessionHint": "履歴の整合性を保つため、DeepSeek Harness でこのセッションを削除してください。"
+  },
+  "codebuddy": {
+    "empty": {
+      "title": "CodeBuddy のプロバイダーを追加",
+      "description": "OpenAI 互換のエンドポイント、API キー、モデルを設定します。~/.codebuddy/models.json にカスタムモデルとして書き込み、ご自身で追加したエントリはそのまま残します。"
+    },
+    "presets": {
+      "selfHostedGateway": "セルフホストゲートウェイ"
+    }
+  },
+  "workbuddy": {
+    "empty": {
+      "title": "WorkBuddy のプロバイダーを追加",
+      "description": "OpenAI 互換のエンドポイント、API キー、モデルを設定します。~/.workbuddy/models.json にカスタムモデルとして書き込み、ご自身で追加したエントリはそのまま残します。"
+    },
+    "presets": {
+      "selfHostedGateway": "セルフホストゲートウェイ"
+    }
   }
 }

@@ -345,6 +345,11 @@ pub(crate) fn build_provider_from_request(
                 "Add DeepSeek Harness providers from the DeepSeek Harness page".into(),
             ));
         }
+        AppType::CodeBuddy | AppType::WorkBuddy => {
+            return Err(AppError::InvalidInput(
+                "Add CodeBuddy and WorkBuddy providers from their own page".into(),
+            ));
+        }
         AppType::Kimi => {
             return Err(AppError::InvalidInput(
                 "Add Kimi Code providers from the Kimi Code page".into(),

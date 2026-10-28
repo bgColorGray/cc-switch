@@ -333,6 +333,9 @@ impl McpService {
             AppType::ClaudeDesktop => {
                 log::debug!("Claude Desktop 3P profiles do not use CC Switch MCP sync, skipping");
             }
+            AppType::CodeBuddy | AppType::WorkBuddy => {
+                log::debug!("CodeBuddy / WorkBuddy MCP is not managed by CC Switch, skipping");
+            }
             AppType::Codex => {
                 // Codex uses TOML format, must use the correct function
                 mcp::sync_single_server_to_codex(&Default::default(), &server.id, &server.server)?;
@@ -407,6 +410,9 @@ impl McpService {
             AppType::ClaudeDesktop => {
                 log::debug!("Claude Desktop 3P profiles do not use CC Switch MCP sync, skipping");
             }
+            AppType::CodeBuddy | AppType::WorkBuddy => {
+                log::debug!("CodeBuddy / WorkBuddy MCP is not managed by CC Switch, skipping");
+            }
             AppType::Codex => mcp::remove_server_from_codex(id)?,
             AppType::Gemini => mcp::remove_server_from_gemini(id)?,
             AppType::GrokBuild => mcp::remove_server_from_grokbuild(id)?,
@@ -465,10 +471,18 @@ impl McpService {
         Self::project_servers_to_app(state, &servers, app)
     }
 
-    /// 由 CC Switch 管理 MCP 的应用（Claude Desktop、OpenClaw 不支持）
+    /// 由 CC Switch 管理 MCP 的应用（Claude Desktop、OpenClaw、CodeBuddy、WorkBuddy 不支持）
     pub fn live_sync_apps() -> Vec<AppType> {
         AppType::all()
-            .filter(|app| !matches!(app, AppType::OpenClaw | AppType::ClaudeDesktop))
+            .filter(|app| {
+                !matches!(
+                    app,
+                    AppType::OpenClaw
+                        | AppType::ClaudeDesktop
+                        | AppType::CodeBuddy
+                        | AppType::WorkBuddy
+                )
+            })
             .collect()
     }
 

@@ -51,6 +51,7 @@ impl McpApps {
             AppType::Omp => self.omp,
             AppType::ClaudeDesktop => false,
             AppType::Agy => self.agy,
+            AppType::CodeBuddy | AppType::WorkBuddy => false,
         }
     }
 
@@ -71,6 +72,7 @@ impl McpApps {
             AppType::ClaudeDesktop => {}
             AppType::Agy => self.agy = enabled,
             AppType::Omp => self.omp = enabled,
+            AppType::CodeBuddy | AppType::WorkBuddy => {}
         }
     }
 
@@ -180,6 +182,7 @@ impl SkillApps {
             AppType::Agy => self.agy,
             AppType::Omp => self.omp,
             AppType::ClaudeDesktop => false,
+            AppType::CodeBuddy | AppType::WorkBuddy => false,
         }
     }
 
@@ -200,6 +203,7 @@ impl SkillApps {
             AppType::Agy => self.agy = enabled,
             AppType::Omp => self.omp = enabled,
             AppType::ClaudeDesktop => {} // Claude Desktop 3P profiles don't use CC Switch skill sync
+            AppType::CodeBuddy | AppType::WorkBuddy => {}
         }
     }
 
@@ -483,6 +487,8 @@ pub enum AppType {
     Dsh,
     Agy,
     Omp,
+    CodeBuddy,
+    WorkBuddy,
 }
 
 impl AppType {
@@ -502,6 +508,8 @@ impl AppType {
             AppType::Dsh => "dsh",
             AppType::Agy => "agy",
             AppType::Omp => "omp",
+            AppType::CodeBuddy => "codebuddy",
+            AppType::WorkBuddy => "workbuddy",
         }
     }
 
@@ -521,6 +529,8 @@ impl AppType {
                 | AppType::Kimi
                 | AppType::Dsh
                 | AppType::Omp
+                | AppType::CodeBuddy
+                | AppType::WorkBuddy
         )
     }
 
@@ -555,6 +565,8 @@ impl AppType {
             AppType::Dsh,
             AppType::Agy,
             AppType::Omp,
+            AppType::CodeBuddy,
+            AppType::WorkBuddy,
         ]
         .into_iter()
     }
@@ -580,10 +592,12 @@ impl FromStr for AppType {
             "dsh" | "deepseek-harness" => Ok(AppType::Dsh),
             "agy" | "antigravity" | "antigravity-cli" => Ok(AppType::Agy),
             "omp" | "oh-my-pi" | "oh_my_pi" | "ohmypi" => Ok(AppType::Omp),
+            "codebuddy" | "codebuddy-code" | "code-buddy" => Ok(AppType::CodeBuddy),
+            "workbuddy" | "work-buddy" => Ok(AppType::WorkBuddy),
             other => Err(AppError::localized(
                 "unsupported_app",
-                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp。"),
-                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp."),
+                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp, codebuddy, workbuddy。"),
+                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp, codebuddy, workbuddy."),
             )),
         }
     }
@@ -628,7 +642,9 @@ impl CommonConfigSnippets {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => None,
+            | AppType::Agy
+            | AppType::CodeBuddy
+            | AppType::WorkBuddy => None,
         }
     }
 
@@ -648,7 +664,9 @@ impl CommonConfigSnippets {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => {}
+            | AppType::Agy
+            | AppType::CodeBuddy
+            | AppType::WorkBuddy => {}
         }
     }
 }
@@ -980,7 +998,9 @@ impl MultiAppConfig {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => return Ok(false),
+            | AppType::Agy
+            | AppType::CodeBuddy
+            | AppType::WorkBuddy => return Ok(false),
         };
 
         prompts.insert(id, prompt);
@@ -1029,7 +1049,9 @@ impl MultiAppConfig {
                 | AppType::Kimi
                 | AppType::Dsh
                 | AppType::Omp
-                | AppType::Agy => continue, // Pi didn't exist in v3.6.x, skip
+                | AppType::Agy
+                | AppType::CodeBuddy
+                | AppType::WorkBuddy => continue, // Pi didn't exist in v3.6.x, skip
             };
 
             for (id, entry) in old_servers {

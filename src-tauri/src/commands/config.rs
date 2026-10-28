@@ -138,6 +138,15 @@ pub async fn get_config_status(
 
             Ok(ConfigStatus { exists, path })
         }
+        app @ (AppType::CodeBuddy | AppType::WorkBuddy) => {
+            let file = crate::codebuddy_config::Buddy::from_app(&app)
+                .expect("CodeBuddy family")
+                .config_path();
+            Ok(ConfigStatus {
+                exists: file.exists(),
+                path: file.to_string_lossy().to_string(),
+            })
+        }
         AppType::Dsh => {
             let file = crate::dsh_config::config_path();
             Ok(ConfigStatus {
@@ -219,6 +228,11 @@ pub async fn get_config_dir(app: String) -> Result<String, String> {
             .unwrap()
             .to_path_buf(),
         AppType::Agy => crate::agy_config::agy_dir(),
+        app @ (AppType::CodeBuddy | AppType::WorkBuddy) => {
+            crate::codebuddy_config::Buddy::from_app(&app)
+                .expect("CodeBuddy family")
+                .data_dir()
+        }
     };
 
     Ok(dir.to_string_lossy().to_string())
@@ -246,6 +260,11 @@ pub async fn open_config_folder(handle: AppHandle, app: String) -> Result<bool, 
             .unwrap()
             .to_path_buf(),
         AppType::Agy => crate::agy_config::agy_dir(),
+        app @ (AppType::CodeBuddy | AppType::WorkBuddy) => {
+            crate::codebuddy_config::Buddy::from_app(&app)
+                .expect("CodeBuddy family")
+                .data_dir()
+        }
     };
 
     if !config_dir.exists() {

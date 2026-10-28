@@ -173,6 +173,8 @@ export function ProviderList({
       switch (appId) {
         case "kimi":
         case "dsh":
+        case "codebuddy":
+        case "workbuddy":
         case "mcode":
           return provider.meta?.liveConfigManaged === true;
         case "opencode":
@@ -460,7 +462,9 @@ export function ProviderList({
             isPiFamilyApp(appId) ||
             appId === "mcode" ||
             appId === "kimi" ||
-            appId === "dsh"
+            appId === "dsh" ||
+            appId === "codebuddy" ||
+            appId === "workbuddy"
               ? undefined
               : () => importMutation.mutate()
           }

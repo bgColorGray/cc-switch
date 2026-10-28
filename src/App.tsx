@@ -783,6 +783,8 @@ function App() {
         if (
           activeApp === "mcode" ||
           activeApp === "dsh" ||
+          activeApp === "codebuddy" ||
+          activeApp === "workbuddy" ||
           activeApp === "kimi" ||
           activeApp === "agy"
         )
@@ -1013,7 +1015,13 @@ function App() {
         queryClient.invalidateQueries({ queryKey: hermesKeys.liveProviderIds }),
         queryClient.invalidateQueries({ queryKey: hermesKeys.modelConfig }),
       ]);
-    } else if (app === "mcode" || app === "dsh" || app === "kimi") {
+    } else if (
+      app === "mcode" ||
+      app === "dsh" ||
+      app === "kimi" ||
+      app === "codebuddy" ||
+      app === "workbuddy"
+    ) {
       await queryClient.invalidateQueries({ queryKey: ["providers", app] });
     }
   };
@@ -1185,6 +1193,8 @@ function App() {
     } else if (
       activeApp === "mcode" ||
       activeApp === "dsh" ||
+      activeApp === "codebuddy" ||
+      activeApp === "workbuddy" ||
       activeApp === "kimi"
     ) {
       // The MCode list already includes its live custom nodes; the backend
@@ -1391,6 +1401,8 @@ function App() {
           {currentView === "providers" &&
             activeApp !== "mcode" &&
             activeApp !== "dsh" &&
+            activeApp !== "codebuddy" &&
+            activeApp !== "workbuddy" &&
             activeApp !== "kimi" &&
             (settingsData?.showProfileSwitcher ?? false) && (
               <ProfileSwitcher activeApp={activeApp} />
@@ -1559,6 +1571,8 @@ function App() {
               activeApp === "mcode" ||
               activeApp === "kimi" ||
               activeApp === "dsh" ||
+              activeApp === "codebuddy" ||
+              activeApp === "workbuddy" ||
               activeApp === "omp"
                 ? (provider) => setConfirmAction({ provider, action: "remove" })
                 : undefined

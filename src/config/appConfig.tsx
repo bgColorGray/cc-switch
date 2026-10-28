@@ -32,6 +32,8 @@ export const APP_IDS: AppId[] = [
   "dsh",
   "agy",
   "omp",
+  "codebuddy",
+  "workbuddy",
 ];
 
 export const DEFAULT_VISIBLE_APPS: VisibleApps = {
@@ -49,6 +51,8 @@ export const DEFAULT_VISIBLE_APPS: VisibleApps = {
   dsh: true,
   agy: true,
   omp: true,
+  codebuddy: true,
+  workbuddy: true,
 };
 
 /**
@@ -137,13 +141,24 @@ export function isStackAppId(appId: string): appId is StackAppId {
 
 export type AdditiveAppId = Extract<
   AppId,
-  "opencode" | "openclaw" | "hermes" | "pi" | "mcode" | "kimi" | "dsh" | "omp"
+  | "opencode"
+  | "openclaw"
+  | "hermes"
+  | "pi"
+  | "mcode"
+  | "kimi"
+  | "dsh"
+  | "omp"
+  | "codebuddy"
+  | "workbuddy"
 >;
 
 export const ADDITIVE_APP_IDS: AdditiveAppId[] = [
   "mcode",
   "kimi",
   "dsh",
+  "codebuddy",
+  "workbuddy",
   "opencode",
   "openclaw",
   "hermes",
@@ -178,7 +193,10 @@ export function usesEditorView(appId: AppId): boolean {
 }
 
 /** Claude Desktop、OpenClaw 不由 CC Switch 管理 MCP；Pi 1.0 起内置 MCP（`~/.pi/agent/mcp.json`） */
-export type McpAppId = Exclude<AppId, "claude-desktop" | "openclaw">;
+export type McpAppId = Exclude<
+  AppId,
+  "claude-desktop" | "openclaw" | "codebuddy" | "workbuddy"
+>;
 export const MCP_APP_IDS: McpAppId[] = [
   "claude",
   "codex",
@@ -287,6 +305,19 @@ export const APP_ICON_MAP: Record<AppId, AppConfig> = {
       "bg-violet-500/10 ring-1 ring-violet-500/20 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400",
     badgeClass:
       "bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 border-0 gap-1.5",
+  },
+  codebuddy: {
+    label: "CodeBuddy",
+    icon: <ProviderIcon icon="tencent" name="CodeBuddy" size={14} />,
+    activeClass: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+    badgeClass:
+      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-0 gap-1.5",
+  },
+  workbuddy: {
+    label: "WorkBuddy",
+    icon: <ProviderIcon icon="tencent" name="WorkBuddy" size={14} />,
+    activeClass: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    badgeClass: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-0 gap-1.5",
   },
   dsh: {
     label: "DeepSeek Harness",

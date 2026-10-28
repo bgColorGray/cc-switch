@@ -5076,5 +5076,23 @@
       "description": "Configure an endpoint, API key and models. Existing custom providers appear here automatically."
     },
     "deleteSessionHint": "Delete this session in DeepSeek Harness to keep its history consistent."
+  },
+  "codebuddy": {
+    "empty": {
+      "title": "Add a CodeBuddy provider",
+      "description": "Add an OpenAI-compatible endpoint, API key and models. They are written to ~/.codebuddy/models.json as custom models; your own entries there are left alone."
+    },
+    "presets": {
+      "selfHostedGateway": "Self-hosted Gateway"
+    }
+  },
+  "workbuddy": {
+    "empty": {
+      "title": "Add a WorkBuddy provider",
+      "description": "Add an OpenAI-compatible endpoint, API key and models. They are written to ~/.workbuddy/models.json as custom models; your own entries there are left alone."
+    },
+    "presets": {
+      "selfHostedGateway": "Self-hosted Gateway"
+    }
   }
 }

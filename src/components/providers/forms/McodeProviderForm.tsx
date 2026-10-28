@@ -13,6 +13,10 @@ import type { ProviderFormData } from "@/lib/schemas/provider";
 import type { OpenCodeModel, OpenCodeProviderOptions } from "@/types";
 import { mcodeProviderPresets } from "@/config/mcodeProviderPresets";
 import { dshProviderPresets } from "@/config/dshProviderPresets";
+import {
+  CODEBUDDY_API_FORMATS,
+  codebuddyProviderPresets,
+} from "@/config/codebuddyProviderPresets";
 import { mcodePresetModelSources } from "@/config/presetModelMetadata";
 import { BasicFormFields } from "./BasicFormFields";
 import { OpenCodeFormFields } from "./OpenCodeFormFields";
@@ -77,7 +81,18 @@ export function McodeProviderForm({
   onSubmitReadyChange,
 }: ProviderFormProps) {
   const { t } = useTranslation();
-  const presets = appId === "dsh" ? dshProviderPresets : mcodeProviderPresets;
+  const isBuddy = appId === "codebuddy" || appId === "workbuddy";
+  const presets = isBuddy
+    ? codebuddyProviderPresets
+    : appId === "dsh"
+      ? dshProviderPresets
+      : mcodeProviderPresets;
+  const apiFormats = isBuddy
+    ? API_FORMATS.filter((format) =>
+        (CODEBUDDY_API_FORMATS as readonly string[]).includes(format.value),
+      )
+    : API_FORMATS;
+  const defaultApi = isBuddy ? "openai-completions" : "anthropic-messages";
   const presetEntries = presets.map((preset, index) => ({
     id: String(index),
     preset,
@@ -87,7 +102,7 @@ export function McodeProviderForm({
     initialData?.settingsConfig ?? {
       kind: "custom",
       enabled: true,
-      api: "anthropic-messages",
+      api: defaultApi,
       options: {},
       models: {},
     },
@@ -151,7 +166,7 @@ export function McodeProviderForm({
     const next = selected?.settingsConfig ?? {
       kind: "custom",
       enabled: true,
-      api: "anthropic-messages",
+      api: defaultApi,
       options: {},
       models: {},
     };
@@ -268,9 +283,9 @@ export function McodeProviderForm({
             }
           />
           <OpenCodeFormFields
-            apiFormats={API_FORMATS}
+            apiFormats={apiFormats}
             presetModelSources={mcodePresetModelSources}
-            npm={config.api ?? "anthropic-messages"}
+            npm={config.api ?? defaultApi}
             onNpmChange={(api) => update({ ...config, api })}
             apiKey={config.options?.apiKey ?? ""}
             onApiKeyChange={(apiKey) => updateOptions({ apiKey })}

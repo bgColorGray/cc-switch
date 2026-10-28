@@ -39,6 +39,9 @@ pub(crate) fn provider_exists_in_live_config(
         AppType::Mcode => crate::mcode_config::get_providers()
             .map(|providers| providers.contains_key(provider_id)),
         AppType::Omp => Ok(crate::omp_config::get_providers()?.contains_key(provider_id)),
+        app @ (AppType::CodeBuddy | AppType::WorkBuddy) => {
+            crate::codebuddy_config::provider_key_exists(buddy(app), provider_id)
+        }
         _ => Ok(false),
     }
 }
@@ -312,6 +315,8 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
         | AppType::Dsh
         | AppType::Agy
         | AppType::Omp
+        | AppType::CodeBuddy
+        | AppType::WorkBuddy
         | AppType::ClaudeDesktop => false,
     }
 }
@@ -392,7 +397,9 @@ pub(crate) fn remove_common_config_from_settings(
         | AppType::Dsh
         | AppType::ClaudeDesktop
         | AppType::Agy
-        | AppType::Omp => Ok(settings.clone()),
+        | AppType::Omp
+        | AppType::CodeBuddy
+        | AppType::WorkBuddy => Ok(settings.clone()),
     }
 }
 
@@ -538,6 +545,10 @@ pub(crate) fn codex_managed_oauth_live_auth(
         refresh_token,
         last_refresh,
     )
+}
+
+fn buddy(app_type: &AppType) -> crate::codebuddy_config::Buddy {
+    crate::codebuddy_config::Buddy::from_app(app_type).expect("CodeBuddy family app")
 }
 
 /// Write live configuration snapshot for a provider
@@ -710,6 +721,11 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
         AppType::Dsh => {
             crate::dsh_config::set_provider(&provider.id, provider.settings_config.clone())?
         }
+        AppType::CodeBuddy | AppType::WorkBuddy => crate::codebuddy_config::set_provider(
+            buddy(app_type),
+            &provider.id,
+            provider.settings_config.clone(),
+        )?,
         AppType::Kimi => {
             crate::kimi_config::set_provider(&provider.id, provider.settings_config.clone())?
         }
@@ -863,7 +879,13 @@ pub fn sync_current_to_live(state: &AppState) -> Result<(), AppError> {
     for app_type in AppType::all() {
         if matches!(
             app_type,
-            AppType::Pi | AppType::Mcode | AppType::Kimi | AppType::Dsh | AppType::Omp
+            AppType::Pi
+                | AppType::Mcode
+                | AppType::Kimi
+                | AppType::Dsh
+                | AppType::Omp
+                | AppType::CodeBuddy
+                | AppType::WorkBuddy
         ) {
             continue;
         }
@@ -1022,6 +1044,9 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
         AppType::Mcode => Ok(json!(crate::mcode_config::get_providers()?)),
         AppType::Kimi => Ok(json!(crate::kimi_config::get_providers()?)),
         AppType::Dsh => Ok(json!(crate::dsh_config::get_providers()?)),
+        AppType::CodeBuddy | AppType::WorkBuddy => Ok(json!(
+            crate::codebuddy_config::get_providers(buddy(&app_type))?
+        )),
         AppType::Pi => Err(AppError::InvalidInput(
             "Pi providers are read from Pi's native models file".to_string(),
         )),
@@ -1150,7 +1175,9 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
         | AppType::Mcode
         | AppType::Kimi
         | AppType::Dsh
-        | AppType::Omp => {
+        | AppType::Omp
+        | AppType::CodeBuddy
+        | AppType::WorkBuddy => {
             unreachable!("additive mode apps are handled by early return")
         }
     };
