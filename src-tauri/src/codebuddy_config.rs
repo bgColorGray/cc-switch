@@ -303,14 +303,11 @@ pub(crate) fn validate_provider(id: &str, config: &Value) -> Result<(), AppError
 
 fn native_entry(id: &str, config: &Value, model_id: &str, model: &Value) -> Value {
     let api = api_of(config);
-    let name = model
-        .get("name")
-        .and_then(Value::as_str)
-        .filter(|name| !name.trim().is_empty())
-        .unwrap_or(model_id);
+    // The products label a custom model "name:id" unless the two match, so the picker shows
+    // just the id instead of every model twice.
     let mut entry = json!({
         "id": model_id,
-        "name": name,
+        "name": model_id,
         "vendor": config.get("name").and_then(Value::as_str).unwrap_or(id),
         "url": endpoint_url(api, str_at(config, "/options/baseURL")),
         "apiKey": str_at(config, "/options/apiKey").trim(),
@@ -704,7 +701,7 @@ mod tests {
         let models = next["models"].as_array().unwrap();
         assert_eq!(models.len(), 2);
         assert_eq!(models[0]["id"], "glm-5.3");
-        assert_eq!(models[0]["name"], "GLM 5.3");
+        assert_eq!(models[0]["name"], "glm-5.3");
         assert_eq!(models[0]["vendor"], "My Gateway");
         assert_eq!(
             models[0]["url"],
