@@ -445,7 +445,9 @@
       "trayStyleMenu": "Menu",
       "trayStyleHelp": "What opens when you click the tray icon (on Windows, left-click always opens the main window and right-click opens the selected style). Panel: each app's in-use provider, quota and usage, with search and switching. Menu: the system's native menu. Takes effect right away.",
       "minimizeToTrayHelp": "When on, the close button only hides the window and CC Switch keeps running in the system tray (lightweight mode is in the tray menu). When off, the close button quits.",
-      "terminalHelp": "The terminal used by “Open terminal” on provider cards. If it isn't available, the system default terminal is used."
+      "terminalHelp": "The terminal used by “Open terminal” on provider cards. If it isn't available, the system default terminal is used.",
+      "autoCheckAppUpdates": "Check for CC Switch updates at launch",
+      "autoCheckAppUpdatesHelp": "Off by default. Updates install the official release, which replaces this build and its CodeBuddy / WorkBuddy support. You can still check by hand in About."
     },
     "tabGeneral": "General",
     "tabAuth": "Auth",
@@ -5079,17 +5081,8 @@
   },
   "codebuddy": {
     "empty": {
-      "title": "Add a CodeBuddy provider",
-      "description": "Add an OpenAI-compatible endpoint, API key and models. They are written to ~/.codebuddy/models.json as custom models; your own entries there are left alone."
-    },
-    "presets": {
-      "selfHostedGateway": "Self-hosted Gateway"
-    }
-  },
-  "workbuddy": {
-    "empty": {
-      "title": "Add a WorkBuddy provider",
-      "description": "Add an OpenAI-compatible endpoint, API key and models. They are written to ~/.workbuddy/models.json as custom models; your own entries there are left alone."
+      "title": "Add a CodeBuddy / WorkBuddy provider",
+      "description": "Add an OpenAI-compatible endpoint, API key and models. They are written to both ~/.codebuddy/models.json and ~/.workbuddy/models.json; while one is added, the official models are hidden so they cannot be picked by mistake. Your own entries there are left alone."
     },
     "presets": {
       "selfHostedGateway": "Self-hosted Gateway"

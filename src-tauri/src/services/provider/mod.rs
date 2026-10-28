@@ -72,10 +72,6 @@ use usage::validate_usage_script;
 /// ownership of the active ChatGPT login and the proxy only forwards the
 /// authenticated request. Other apps' official providers retain the block.
 /// Claude Desktop 直连模式下用不了要经路由的卡。
-fn buddy(app_type: &AppType) -> crate::codebuddy_config::Buddy {
-    crate::codebuddy_config::Buddy::from_app(app_type).expect("CodeBuddy family app")
-}
-
 fn desktop_needs_routing_error() -> AppError {
     AppError::localized(
         "switch.desktop_needs_routing",
@@ -5471,7 +5467,7 @@ impl ProviderService {
         if app_type == AppType::Omp {
             return omp::list(state);
         }
-        if matches!(app_type, AppType::CodeBuddy | AppType::WorkBuddy) {
+        if matches!(app_type, AppType::CodeBuddy) {
             return Self::list_codebuddy(state, &app_type);
         }
         if matches!(app_type, AppType::Mcode | AppType::Kimi | AppType::Dsh) {
@@ -5525,7 +5521,7 @@ impl ProviderService {
         state: &AppState,
         app_type: &AppType,
     ) -> Result<IndexMap<String, Provider>, AppError> {
-        let native = crate::codebuddy_config::get_providers(buddy(app_type))?;
+        let native = crate::codebuddy_config::get_providers()?;
         let mut saved = state.db.get_all_providers(app_type.as_str())?;
         for (id, config) in &native {
             if !saved.contains_key(id) {
@@ -5577,14 +5573,13 @@ impl ProviderService {
         write_live: bool,
         create: bool,
     ) -> Result<bool, AppError> {
-        if matches!(app_type, AppType::CodeBuddy | AppType::WorkBuddy) {
+        if matches!(app_type, AppType::CodeBuddy) {
             let save = || {
                 state.db.save_provider(app_type.as_str(), provider)?;
                 Ok(true)
             };
             return if write_live {
                 crate::codebuddy_config::save_and_commit(
-                    buddy(app_type),
                     &provider.id,
                     Some(provider.settings_config.clone()),
                     create,
@@ -5712,7 +5707,7 @@ impl ProviderService {
 
         if matches!(
             app_type,
-            AppType::Mcode | AppType::Kimi | AppType::Dsh | AppType::CodeBuddy | AppType::WorkBuddy
+            AppType::Mcode | AppType::Kimi | AppType::Dsh | AppType::CodeBuddy
         ) {
             // The key is user-chosen, and saving would overwrite an existing row or live node.
             // Adds are serialized here; the live write repeats the check under MCode's file lock.
@@ -5723,8 +5718,8 @@ impl ProviderService {
                 .db
                 .get_provider_by_id(&provider.id, app_type.as_str())?
                 .is_some()
-                || if let Some(buddy) = crate::codebuddy_config::Buddy::from_app(&app_type) {
-                    crate::codebuddy_config::provider_key_exists(buddy, &provider.id)?
+                || if app_type == AppType::CodeBuddy {
+                    crate::codebuddy_config::provider_key_exists(&provider.id)?
                 } else if app_type == AppType::Dsh {
                     crate::dsh_config::provider_key_exists(&provider.id)?
                 } else if app_type == AppType::Kimi {
@@ -6438,11 +6433,7 @@ impl ProviderService {
 
             if matches!(
                 app_type,
-                AppType::Mcode
-                    | AppType::Kimi
-                    | AppType::Dsh
-                    | AppType::CodeBuddy
-                    | AppType::WorkBuddy
+                AppType::Mcode | AppType::Kimi | AppType::Dsh | AppType::CodeBuddy
             ) {
                 return Self::save_native_provider(
                     state,
@@ -6588,14 +6579,10 @@ impl ProviderService {
         if app_type == AppType::Pi {
             return pi::delete(state, id);
         }
-        if matches!(app_type, AppType::CodeBuddy | AppType::WorkBuddy) {
-            return crate::codebuddy_config::save_and_commit(
-                buddy(&app_type),
-                id,
-                None,
-                false,
-                || state.db.delete_provider(app_type.as_str(), id),
-            );
+        if matches!(app_type, AppType::CodeBuddy) {
+            return crate::codebuddy_config::save_and_commit(id, None, false, || {
+                state.db.delete_provider(app_type.as_str(), id)
+            });
         }
         if app_type == AppType::Dsh {
             return crate::dsh_config::save_and_commit(id, None, false, || {
@@ -6668,9 +6655,7 @@ impl ProviderService {
                     AppType::Mcode => crate::mcode_config::remove_provider(id)?,
                     AppType::Kimi => crate::kimi_config::remove_provider(id)?,
                     AppType::Dsh => crate::dsh_config::remove_provider(id)?,
-                    AppType::CodeBuddy | AppType::WorkBuddy => {
-                        crate::codebuddy_config::remove_provider(buddy(&app_type), id)?
-                    }
+                    AppType::CodeBuddy => crate::codebuddy_config::remove_provider(id)?,
                     _ => {}
                 }
             }
@@ -6738,22 +6723,14 @@ impl ProviderService {
         if app_type == AppType::Pi {
             return pi::remove(state, id);
         }
-        if matches!(app_type, AppType::CodeBuddy | AppType::WorkBuddy) {
-            return crate::codebuddy_config::save_and_commit(
-                buddy(&app_type),
-                id,
-                None,
-                false,
-                || {
-                    if let Some(mut provider) =
-                        state.db.get_provider_by_id(id, app_type.as_str())?
-                    {
-                        Self::set_provider_live_config_managed(&mut provider, false);
-                        state.db.save_provider(app_type.as_str(), &provider)?;
-                    }
-                    Ok(())
-                },
-            );
+        if matches!(app_type, AppType::CodeBuddy) {
+            return crate::codebuddy_config::save_and_commit(id, None, false, || {
+                if let Some(mut provider) = state.db.get_provider_by_id(id, app_type.as_str())? {
+                    Self::set_provider_live_config_managed(&mut provider, false);
+                    state.db.save_provider(app_type.as_str(), &provider)?;
+                }
+                Ok(())
+            });
         }
         if app_type == AppType::Dsh {
             return crate::dsh_config::save_and_commit(id, None, false, || {
@@ -6818,9 +6795,7 @@ impl ProviderService {
             AppType::Mcode => crate::mcode_config::remove_provider(id)?,
             AppType::Kimi => crate::kimi_config::remove_provider(id)?,
             AppType::Dsh => crate::dsh_config::remove_provider(id)?,
-            AppType::CodeBuddy | AppType::WorkBuddy => {
-                crate::codebuddy_config::remove_provider(buddy(&app_type), id)?
-            }
+            AppType::CodeBuddy => crate::codebuddy_config::remove_provider(id)?,
             _ => {
                 return Err(AppError::Message(format!(
                     "App {} does not support remove from live config",
@@ -6927,11 +6902,10 @@ impl ProviderService {
             .get(id)
             .ok_or_else(|| AppError::Message(format!("供应商 {id} 不存在")))?;
 
-        if matches!(app_type, AppType::CodeBuddy | AppType::WorkBuddy) {
+        if matches!(app_type, AppType::CodeBuddy) {
             let mut provider = _provider.clone();
             Self::set_provider_live_config_managed(&mut provider, true);
             crate::codebuddy_config::save_and_commit(
-                buddy(&app_type),
                 id,
                 Some(provider.settings_config.clone()),
                 false,
@@ -7130,9 +7104,7 @@ impl ProviderService {
                     AppType::Mcode => crate::mcode_config::remove_provider(&provider.id),
                     AppType::Kimi => crate::kimi_config::remove_provider(&provider.id),
                     AppType::Dsh => crate::dsh_config::remove_provider(&provider.id),
-                    AppType::CodeBuddy | AppType::WorkBuddy => {
-                        crate::codebuddy_config::remove_provider(buddy(&app_type), &provider.id)
-                    }
+                    AppType::CodeBuddy => crate::codebuddy_config::remove_provider(&provider.id),
                     _ => Ok(()),
                 };
 
@@ -7402,8 +7374,7 @@ impl ProviderService {
             | AppType::Dsh
             | AppType::Omp
             | AppType::Agy
-            | AppType::CodeBuddy
-            | AppType::WorkBuddy => Ok(String::new()),
+            | AppType::CodeBuddy => Ok(String::new()),
         }
     }
 
@@ -7427,8 +7398,7 @@ impl ProviderService {
             | AppType::Dsh
             | AppType::Omp
             | AppType::Agy
-            | AppType::CodeBuddy
-            | AppType::WorkBuddy => Ok(String::new()),
+            | AppType::CodeBuddy => Ok(String::new()),
         }
     }
 
@@ -8207,9 +8177,8 @@ impl ProviderService {
             AppType::Omp => {
                 crate::omp_config::validate_provider(&provider.id, &provider.settings_config)?;
             }
-            app @ (AppType::CodeBuddy | AppType::WorkBuddy) => {
+            AppType::CodeBuddy => {
                 crate::codebuddy_config::validate_provider(
-                    buddy(app),
                     &provider.id,
                     &provider.settings_config,
                 )?;
@@ -8412,7 +8381,7 @@ impl ProviderService {
 
                 Ok((api_key, base_url))
             }
-            AppType::Dsh | AppType::CodeBuddy | AppType::WorkBuddy => Ok((
+            AppType::Dsh | AppType::CodeBuddy => Ok((
                 provider
                     .settings_config
                     .pointer("/options/apiKey")

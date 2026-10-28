@@ -180,6 +180,17 @@ export function GeneralSection({
               void onAutoSave({ checkToolUpdatesOnStartup: value })
             }
           />
+          <SettingsSwitchRow
+            label={t("settings.general.autoCheckAppUpdates")}
+            help={{
+              title: t("settings.general.autoCheckAppUpdates"),
+              body: t("settings.general.autoCheckAppUpdatesHelp"),
+            }}
+            checked={settings.autoCheckAppUpdates ?? false}
+            onCheckedChange={(value) =>
+              void onAutoSave({ autoCheckAppUpdates: value })
+            }
+          />
         </SettingsCard>
       </SettingsBlock>
 

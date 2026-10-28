@@ -445,7 +445,9 @@
       "trayStyleMenu": "菜单",
       "trayStyleHelp": "点托盘图标时弹出什么（Windows 上左键始终打开主界面，右键弹出所选样式）。面板：各应用在用的供应商、额度和用量，可以搜索、切换。菜单：系统原生菜单。切换后立即生效。",
       "minimizeToTrayHelp": "打开时，点关闭按钮只隐藏窗口，CC Switch 留在系统托盘里继续运行（轻量模式在托盘菜单里）；关闭时点关闭按钮直接退出。",
-      "terminalHelp": "点供应商卡片上的「打开终端」时用哪个终端。选的终端不可用时，改用系统默认终端。"
+      "terminalHelp": "点供应商卡片上的「打开终端」时用哪个终端。选的终端不可用时，改用系统默认终端。",
+      "autoCheckAppUpdates": "启动时检查 CC Switch 新版本",
+      "autoCheckAppUpdatesHelp": "默认关闭。更新会装回官方版本，覆盖当前构建及其 CodeBuddy / WorkBuddy 支持。仍可在「关于」里手动检查。"
     },
     "tabGeneral": "通用",
     "tabAuth": "认证",
@@ -5079,17 +5081,8 @@
   },
   "codebuddy": {
     "empty": {
-      "title": "添加 CodeBuddy 供应商",
-      "description": "配置 OpenAI 兼容的请求地址、API Key 和模型，写入 ~/.codebuddy/models.json 作为自定义模型；你自己在里面添加的模型不会被改动。"
-    },
-    "presets": {
-      "selfHostedGateway": "自建网关"
-    }
-  },
-  "workbuddy": {
-    "empty": {
-      "title": "添加 WorkBuddy 供应商",
-      "description": "配置 OpenAI 兼容的请求地址、API Key 和模型，写入 ~/.workbuddy/models.json 作为自定义模型；你自己在里面添加的模型不会被改动。"
+      "title": "添加 CodeBuddy / WorkBuddy 供应商",
+      "description": "配置 OpenAI 兼容的请求地址、API Key 和模型，同时写入 ~/.codebuddy/models.json 和 ~/.workbuddy/models.json。添加后会隐藏官方模型，避免误用；你自己在里面添加的模型不会被改动。"
     },
     "presets": {
       "selfHostedGateway": "自建网关"

@@ -81,7 +81,7 @@ export function McodeProviderForm({
   onSubmitReadyChange,
 }: ProviderFormProps) {
   const { t } = useTranslation();
-  const isBuddy = appId === "codebuddy" || appId === "workbuddy";
+  const isBuddy = appId === "codebuddy";
   const presets = isBuddy
     ? codebuddyProviderPresets
     : appId === "dsh"

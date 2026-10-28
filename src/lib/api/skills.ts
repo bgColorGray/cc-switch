@@ -35,7 +35,6 @@ export interface SkillApps {
   agy?: boolean;
   omp?: boolean;
   codebuddy?: boolean;
-  workbuddy?: boolean;
 }
 
 /** 已安装的 Skill（v3.10.0+ 统一结构） */

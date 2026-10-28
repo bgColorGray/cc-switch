@@ -320,7 +320,6 @@ export interface VisibleApps {
   agy: boolean;
   omp: boolean;
   codebuddy?: boolean;
-  workbuddy?: boolean;
 }
 
 // WebDAV 同步状态
@@ -428,6 +427,7 @@ export interface Settings {
   showProviderSearch?: boolean;
   // 启动时检查已安装的命令行应用有没有新版本（默认关）
   checkToolUpdatesOnStartup?: boolean;
+  autoCheckAppUpdates?: boolean;
   // 点托盘图标出原生菜单，不出托盘面板（macOS / Windows；Linux 一律原生菜单；默认关，没写过视为关，即用托盘面板）
   nativeTrayMenu?: boolean;
   // Preserve Codex ChatGPT login in auth.json when switching third-party providers

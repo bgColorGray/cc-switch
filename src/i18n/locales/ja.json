@@ -445,7 +445,9 @@
       "trayStyleMenu": "メニュー",
       "trayStyleHelp": "トレイアイコンをクリックしたときに開くものです（Windows では左クリックで常にメイン画面を開き、右クリックで選択した表示を開きます）。パネル：各アプリの使用中のプロバイダー、クォータ、使用量を表示し、検索して切り替えられます。メニュー：システム標準のメニュー。すぐに反映されます。",
       "minimizeToTrayHelp": "オンのときは閉じるボタンでウィンドウを隠すだけで、CC Switch はシステムトレイで動き続けます（軽量モードはトレイメニューにあります）。オフのときは閉じるボタンで終了します。",
-      "terminalHelp": "プロバイダーカードの「ターミナルを開く」で使うターミナルです。使えない場合はシステムの既定のターミナルを使います。"
+      "terminalHelp": "プロバイダーカードの「ターミナルを開く」で使うターミナルです。使えない場合はシステムの既定のターミナルを使います。",
+      "autoCheckAppUpdates": "起動時に CC Switch の更新を確認",
+      "autoCheckAppUpdatesHelp": "既定ではオフです。更新すると公式リリースがインストールされ、このビルドと CodeBuddy / WorkBuddy 対応が置き換わります。「情報」から手動で確認できます。"
     },
     "tabGeneral": "一般",
     "tabAuth": "認証",
@@ -5079,17 +5081,8 @@
   },
   "codebuddy": {
     "empty": {
-      "title": "CodeBuddy のプロバイダーを追加",
-      "description": "OpenAI 互換のエンドポイント、API キー、モデルを設定します。~/.codebuddy/models.json にカスタムモデルとして書き込み、ご自身で追加したエントリはそのまま残します。"
-    },
-    "presets": {
-      "selfHostedGateway": "セルフホストゲートウェイ"
-    }
-  },
-  "workbuddy": {
-    "empty": {
-      "title": "WorkBuddy のプロバイダーを追加",
-      "description": "OpenAI 互換のエンドポイント、API キー、モデルを設定します。~/.workbuddy/models.json にカスタムモデルとして書き込み、ご自身で追加したエントリはそのまま残します。"
+      "title": "CodeBuddy / WorkBuddy のプロバイダーを追加",
+      "description": "OpenAI 互換のエンドポイント、API キー、モデルを設定し、~/.codebuddy/models.json と ~/.workbuddy/models.json の両方に書き込みます。追加中は公式モデルを非表示にして誤選択を防ぎます。ご自身で追加したエントリはそのまま残します。"
     },
     "presets": {
       "selfHostedGateway": "セルフホストゲートウェイ"

@@ -174,7 +174,6 @@ export function ProviderList({
         case "kimi":
         case "dsh":
         case "codebuddy":
-        case "workbuddy":
         case "mcode":
           return provider.meta?.liveConfigManaged === true;
         case "opencode":
@@ -463,8 +462,7 @@ export function ProviderList({
             appId === "mcode" ||
             appId === "kimi" ||
             appId === "dsh" ||
-            appId === "codebuddy" ||
-            appId === "workbuddy"
+            appId === "codebuddy"
               ? undefined
               : () => importMutation.mutate()
           }

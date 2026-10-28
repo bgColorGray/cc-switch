@@ -64,44 +64,55 @@ fn ids(document: &Value) -> Vec<String> {
         .collect()
 }
 
-fn managed(state: &cc_switch_lib::AppState, app: AppType, id: &str) -> Option<bool> {
-    ProviderService::list(state, app).unwrap()[id]
+fn managed(state: &cc_switch_lib::AppState, id: &str) -> Option<bool> {
+    ProviderService::list(state, AppType::CodeBuddy).unwrap()[id]
         .meta
         .as_ref()
         .and_then(|meta| meta.live_config_managed)
 }
 
 #[test]
-fn codebuddy_provider_lifecycle_keeps_the_users_own_models() {
+fn one_provider_drives_codebuddy_and_workbuddy_and_hides_official_models() {
     let _guard = test_mutex().lock().unwrap();
     reset_test_fs();
-    let home = BuddyHome::new("CODEBUDDY_CONFIG_DIR");
+    let code = BuddyHome::new("CODEBUDDY_CONFIG_DIR");
+    let work = BuddyHome::new("WORKBUDDY_CONFIG_DIR");
     let state = create_test_state().unwrap();
     fs::write(
-        home.models_json(),
-        r#"{"models":[{"id":"mine","url":"http://localhost:11434/v1/chat/completions"}],"availableModels":["mine"]}"#,
+        code.models_json(),
+        r#"{"models":[{"id":"mine","url":"http://localhost:11434/v1/chat/completions"}],"availableModels":["mine","hy3"]}"#,
     )
     .unwrap();
 
     ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "glm-5.3"), false).unwrap();
-    assert_eq!(ids(&home.read()), ["mine"]);
-    assert_eq!(managed(&state, AppType::CodeBuddy, "gw"), Some(false));
+    assert_eq!(ids(&code.read()), ["mine"]);
+    assert!(!work.models_json().exists());
+    assert_eq!(managed(&state, "gw"), Some(false));
 
     ProviderService::switch(&state, AppType::CodeBuddy, "gw").unwrap();
-    let document = home.read();
+    let document = code.read();
     assert_eq!(ids(&document), ["mine", "glm-5.3"]);
-    assert_eq!(document["availableModels"], json!(["mine", "glm-5.3"]));
+    assert_eq!(
+        document["availableModels"],
+        json!(["custom-local:mine", "custom-local:glm-5.3"])
+    );
     assert_eq!(
         document["models"][1]["url"],
         "http://gateway.example:8788/v1/chat/completions"
     );
-    assert_eq!(document["models"][1]["maxInputTokens"], 128000);
-    assert_eq!(managed(&state, AppType::CodeBuddy, "gw"), Some(true));
+    let workbuddy = work.read();
+    assert_eq!(ids(&workbuddy), ["glm-5.3"]);
+    assert_eq!(
+        workbuddy["availableModels"],
+        json!(["custom-local:glm-5.3"])
+    );
+    assert_eq!(managed(&state, "gw"), Some(true));
 
     let mut edited = ProviderService::list(&state, AppType::CodeBuddy).unwrap()["gw"].clone();
     edited.settings_config["models"] = json!({"deepseek-v4.1-flash": {"name": "Flash"}});
     ProviderService::update(&state, AppType::CodeBuddy, None, edited).unwrap();
-    assert_eq!(ids(&home.read()), ["mine", "deepseek-v4.1-flash"]);
+    assert_eq!(ids(&code.read()), ["mine", "deepseek-v4.1-flash"]);
+    assert_eq!(ids(&work.read()), ["deepseek-v4.1-flash"]);
 
     assert!(
         ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "x"), true).is_err(),
@@ -113,45 +124,43 @@ fn codebuddy_provider_lifecycle_keeps_the_users_own_models() {
     );
 
     ProviderService::remove_from_live_config(&state, AppType::CodeBuddy, "gw").unwrap();
-    assert_eq!(ids(&home.read()), ["mine"]);
-    assert_eq!(home.read()["availableModels"], json!(["mine"]));
-    assert_eq!(managed(&state, AppType::CodeBuddy, "gw"), Some(false));
+    let restored = code.read();
+    assert_eq!(ids(&restored), ["mine"]);
+    assert_eq!(restored["availableModels"], json!(["mine", "hy3"]));
+    let workbuddy = work.read();
+    assert_eq!(ids(&workbuddy), Vec::<String>::new());
+    assert!(workbuddy.get("availableModels").is_none());
+    assert_eq!(managed(&state, "gw"), Some(false));
 
     ProviderService::switch(&state, AppType::CodeBuddy, "gw").unwrap();
     ProviderService::delete(&state, AppType::CodeBuddy, "gw").unwrap();
-    assert_eq!(ids(&home.read()), ["mine"]);
+    assert_eq!(code.read()["availableModels"], json!(["mine", "hy3"]));
     assert!(!ProviderService::list(&state, AppType::CodeBuddy)
         .unwrap()
         .contains_key("gw"));
 }
 
 #[test]
-fn workbuddy_writes_its_own_file_and_recovers_tagged_entries() {
+fn tagged_entries_in_either_file_are_recovered() {
     let _guard = test_mutex().lock().unwrap();
     reset_test_fs();
-    let codebuddy = BuddyHome::new("CODEBUDDY_CONFIG_DIR");
-    let workbuddy = BuddyHome::new("WORKBUDDY_CONFIG_DIR");
+    let _code = BuddyHome::new("CODEBUDDY_CONFIG_DIR");
+    let work = BuddyHome::new("WORKBUDDY_CONFIG_DIR");
     let state = create_test_state().unwrap();
-
-    ProviderService::add(&state, AppType::WorkBuddy, provider("gw", "glm-5.3"), true).unwrap();
-    assert_eq!(ids(&workbuddy.read()), ["glm-5.3"]);
-    assert!(!codebuddy.models_json().exists());
-    assert!(workbuddy.read().get("availableModels").is_none());
-
-    // An entry tagged by another install shows up as an added provider.
-    let mut document = workbuddy.read();
-    document["models"].as_array_mut().unwrap().push(
-        json!({"id": "kimi-k3", "name": "Kimi", "vendor": "Restored",
-                     "url": "https://restored.example/v1/chat/completions",
-                     "apiKey": "test-value", "ccSwitchProvider": "restored"}),
-    );
-    fs::write(workbuddy.models_json(), document.to_string()).unwrap();
-    let providers = ProviderService::list(&state, AppType::WorkBuddy).unwrap();
+    fs::write(
+        work.models_json(),
+        json!({"models": [{"id": "kimi-k3", "name": "Kimi", "vendor": "Restored",
+                           "url": "https://restored.example/v1/chat/completions",
+                           "apiKey": "test-value", "ccSwitchProvider": "restored"}]})
+        .to_string(),
+    )
+    .unwrap();
+    let providers = ProviderService::list(&state, AppType::CodeBuddy).unwrap();
     let restored = &providers["restored"];
     assert_eq!(restored.name, "Restored");
     assert_eq!(
         restored.settings_config["options"]["baseURL"],
         "https://restored.example/v1"
     );
-    assert_eq!(managed(&state, AppType::WorkBuddy, "restored"), Some(true));
+    assert_eq!(managed(&state, "restored"), Some(true));
 }

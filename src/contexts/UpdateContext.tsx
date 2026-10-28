@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import type { UpdateInfo } from "../lib/updater";
 import { checkForUpdate } from "../lib/updater";
+import { useSettingsQuery } from "@/lib/query";
 import { extractErrorMessage } from "../utils/errorUtils";
 
 interface UpdateContextValue {
@@ -116,15 +117,21 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(LEGACY_DISMISSED_KEY);
   }, []);
 
-  // 应用启动时自动检查更新
+  // 应用启动时自动检查更新：默认关闭（自动更新会装回官方版本，覆盖本 fork 的构建），
+  // 在设置里打开后才查；「关于」里的手动检查不受影响。
+  const { data: settings } = useSettingsQuery();
+  const autoCheck = settings?.autoCheckAppUpdates ?? false;
+  const startupCheckDoneRef = useRef(false);
   useEffect(() => {
+    if (!autoCheck || startupCheckDoneRef.current) return;
+    startupCheckDoneRef.current = true;
     // 延迟1秒后检查，避免影响启动体验
     const timer = setTimeout(() => {
       checkUpdate().catch(console.error);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [checkUpdate]);
+  }, [autoCheck, checkUpdate]);
 
   const value: UpdateContextValue = {
     hasUpdate,

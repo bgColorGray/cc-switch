@@ -19,8 +19,7 @@ export const APP_DISPLAY_NAME: Record<AppId, string> = {
   dsh: "DeepSeek Harness",
   agy: "Antigravity",
   omp: "Oh My Pi",
-  codebuddy: "CodeBuddy",
-  workbuddy: "WorkBuddy",
+  codebuddy: "CodeBuddy / WorkBuddy",
 };
 
 const APP_ICON_NAME: Record<AppId, string> = {
@@ -39,7 +38,6 @@ const APP_ICON_NAME: Record<AppId, string> = {
   agy: "antigravity",
   omp: "omp",
   codebuddy: "tencent",
-  workbuddy: "tencent",
 };
 
 // Claude Code 和 Claude Desktop 用同一个图标，靠右下角的小角标区分终端与桌面

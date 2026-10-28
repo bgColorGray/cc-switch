@@ -333,8 +333,7 @@ export function ProviderForm(props: ProviderFormProps) {
   if (
     props.appId === "mcode" ||
     props.appId === "dsh" ||
-    props.appId === "codebuddy" ||
-    props.appId === "workbuddy"
+    props.appId === "codebuddy"
   )
     return <McodeProviderForm {...props} />;
   if (props.appId === "pi" || props.appId === "omp") {

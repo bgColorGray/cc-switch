@@ -725,8 +725,7 @@ describe("AppsPage concurrent CLI upgrades", () => {
       ).getAllByRole("button", { name: "appsPage.dragHandle" }),
     ).toHaveLength(
       // hermes 和 codex 未安装；CodeBuddy / WorkBuddy 没有工具行
-      APP_IDS.filter((app) => app !== "codebuddy" && app !== "workbuddy")
-        .length - 2,
+      APP_IDS.filter((app) => app !== "codebuddy").length - 2,
     );
     expect(
       within(

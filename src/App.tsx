@@ -784,7 +784,6 @@ function App() {
           activeApp === "mcode" ||
           activeApp === "dsh" ||
           activeApp === "codebuddy" ||
-          activeApp === "workbuddy" ||
           activeApp === "kimi" ||
           activeApp === "agy"
         )
@@ -1019,8 +1018,7 @@ function App() {
       app === "mcode" ||
       app === "dsh" ||
       app === "kimi" ||
-      app === "codebuddy" ||
-      app === "workbuddy"
+      app === "codebuddy"
     ) {
       await queryClient.invalidateQueries({ queryKey: ["providers", app] });
     }
@@ -1194,7 +1192,6 @@ function App() {
       activeApp === "mcode" ||
       activeApp === "dsh" ||
       activeApp === "codebuddy" ||
-      activeApp === "workbuddy" ||
       activeApp === "kimi"
     ) {
       // The MCode list already includes its live custom nodes; the backend
@@ -1402,7 +1399,6 @@ function App() {
             activeApp !== "mcode" &&
             activeApp !== "dsh" &&
             activeApp !== "codebuddy" &&
-            activeApp !== "workbuddy" &&
             activeApp !== "kimi" &&
             (settingsData?.showProfileSwitcher ?? false) && (
               <ProfileSwitcher activeApp={activeApp} />
@@ -1572,7 +1568,6 @@ function App() {
               activeApp === "kimi" ||
               activeApp === "dsh" ||
               activeApp === "codebuddy" ||
-              activeApp === "workbuddy" ||
               activeApp === "omp"
                 ? (provider) => setConfirmAction({ provider, action: "remove" })
                 : undefined

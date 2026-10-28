@@ -333,7 +333,7 @@ impl McpService {
             AppType::ClaudeDesktop => {
                 log::debug!("Claude Desktop 3P profiles do not use CC Switch MCP sync, skipping");
             }
-            AppType::CodeBuddy | AppType::WorkBuddy => {
+            AppType::CodeBuddy => {
                 log::debug!("CodeBuddy / WorkBuddy MCP is not managed by CC Switch, skipping");
             }
             AppType::Codex => {
@@ -410,7 +410,7 @@ impl McpService {
             AppType::ClaudeDesktop => {
                 log::debug!("Claude Desktop 3P profiles do not use CC Switch MCP sync, skipping");
             }
-            AppType::CodeBuddy | AppType::WorkBuddy => {
+            AppType::CodeBuddy => {
                 log::debug!("CodeBuddy / WorkBuddy MCP is not managed by CC Switch, skipping");
             }
             AppType::Codex => mcp::remove_server_from_codex(id)?,
@@ -477,10 +477,7 @@ impl McpService {
             .filter(|app| {
                 !matches!(
                     app,
-                    AppType::OpenClaw
-                        | AppType::ClaudeDesktop
-                        | AppType::CodeBuddy
-                        | AppType::WorkBuddy
+                    AppType::OpenClaw | AppType::ClaudeDesktop | AppType::CodeBuddy
                 )
             })
             .collect()

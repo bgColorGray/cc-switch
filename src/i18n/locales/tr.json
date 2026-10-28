@@ -422,7 +422,9 @@
       "trayStyleMenu": "Menü",
       "trayStyleHelp": "Tepsi simgesine tıkladığınızda ne açılacağını belirler (Windows'ta sol tıklama her zaman ana pencereyi, sağ tıklama ise seçilen görünümü açar). Panel: her uygulamanın etkin sağlayıcısını, kotasını ve kullanımını arama ve geçiş seçenekleriyle gösterir. Menü: sistemin yerel menüsünü açar. Değişiklik hemen uygulanır.",
       "minimizeToTrayHelp": "Açık olduğunda, kapat düğmesi yalnızca pencereyi gizler ve CC Switch sistem tepsisinde çalışmaya devam eder (hafif mod tepsi menüsündedir). Kapatıldığında kapatma düğmesi kapanır.",
-      "terminalHelp": "Sağlayıcı kartlarındaki “Açık terminal”in kullandığı terminal. Mevcut değilse sistemin varsayılan terminali kullanılır."
+      "terminalHelp": "Sağlayıcı kartlarındaki “Açık terminal”in kullandığı terminal. Mevcut değilse sistemin varsayılan terminali kullanılır.",
+      "autoCheckAppUpdates": "Açılışta CC Switch güncellemelerini kontrol et",
+      "autoCheckAppUpdatesHelp": "Varsayılan olarak kapalı. Güncellemeler resmi sürümü kurar; bu derlemenin yerini ve CodeBuddy / WorkBuddy desteğini kaldırır. Hakkında bölümünden elle kontrol edebilirsiniz."
     },
     "tabGeneral": "Genel",
     "tabAuth": "Kimlik doğrulama",
@@ -5035,17 +5037,8 @@
   },
   "codebuddy": {
     "empty": {
-      "title": "CodeBuddy sağlayıcısı ekle",
-      "description": "OpenAI uyumlu bir uç nokta, API anahtarı ve modeller ekleyin. ~/.codebuddy/models.json dosyasına özel model olarak yazılır; oradaki kendi girdileriniz değiştirilmez."
-    },
-    "presets": {
-      "selfHostedGateway": "Kendi Barındırılan Ağ Geçidi"
-    }
-  },
-  "workbuddy": {
-    "empty": {
-      "title": "WorkBuddy sağlayıcısı ekle",
-      "description": "OpenAI uyumlu bir uç nokta, API anahtarı ve modeller ekleyin. ~/.workbuddy/models.json dosyasına özel model olarak yazılır; oradaki kendi girdileriniz değiştirilmez."
+      "title": "CodeBuddy / WorkBuddy sağlayıcısı ekle",
+      "description": "OpenAI uyumlu bir uç nokta, API anahtarı ve modeller ekleyin. Hem ~/.codebuddy/models.json hem ~/.workbuddy/models.json dosyasına yazılır; eklendiği sürece resmi modeller yanlışlıkla seçilmesin diye gizlenir. Oradaki kendi girdileriniz değiştirilmez."
     },
     "presets": {
       "selfHostedGateway": "Kendi Barındırılan Ağ Geçidi"

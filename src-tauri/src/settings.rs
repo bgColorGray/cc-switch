@@ -63,8 +63,6 @@ pub struct VisibleApps {
     pub agy: bool,
     #[serde(default = "default_true")]
     pub codebuddy: bool,
-    #[serde(default = "default_true")]
-    pub workbuddy: bool,
 }
 
 impl Default for VisibleApps {
@@ -85,7 +83,6 @@ impl Default for VisibleApps {
             agy: true,
             omp: true,
             codebuddy: true,
-            workbuddy: true,
         }
     }
 }
@@ -109,7 +106,6 @@ impl VisibleApps {
             AppType::Agy => self.agy,
             AppType::Omp => self.omp,
             AppType::CodeBuddy => self.codebuddy,
-            AppType::WorkBuddy => self.workbuddy,
         }
     }
 }
@@ -477,6 +473,10 @@ pub struct AppSettings {
     /// many users do not want to chase every release).
     #[serde(default)]
     pub check_tool_updates_on_startup: bool,
+    /// Check for a new CC Switch release at startup. Off by default in this fork: the
+    /// updater installs official releases, which would replace the fork's own build.
+    #[serde(default)]
+    pub auto_check_app_updates: bool,
     /// 点托盘图标出原生菜单，不出托盘面板（macOS / Windows；Linux 只能出原生菜单，不看这一项）。
     /// 默认关：用托盘面板，想要原生菜单在设置里换回。
     #[serde(default)]
@@ -675,6 +675,7 @@ impl Default for AppSettings {
             show_profile_switcher: false,
             show_provider_search: true,
             check_tool_updates_on_startup: false,
+            auto_check_app_updates: false,
             native_tray_menu: false,
             preserve_codex_official_auth_on_switch: false,
             unify_codex_session_history: false,
@@ -1396,8 +1397,7 @@ pub fn get_current_provider(app_type: &AppType) -> Option<String> {
         | AppType::Kimi
         | AppType::Dsh
         | AppType::Omp
-        | AppType::CodeBuddy
-        | AppType::WorkBuddy => None,
+        | AppType::CodeBuddy => None,
     }
 }
 
@@ -1422,8 +1422,7 @@ pub fn set_current_provider(app_type: &AppType, id: Option<&str>) -> Result<(), 
         | AppType::Kimi
         | AppType::Dsh
         | AppType::Omp
-        | AppType::CodeBuddy
-        | AppType::WorkBuddy => {}
+        | AppType::CodeBuddy => {}
     })
 }
 
