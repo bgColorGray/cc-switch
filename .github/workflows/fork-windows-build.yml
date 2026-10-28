@@ -1,0 +1,74 @@
+name: Fork Windows Build
+
+# Unsigned Windows x64 build of this fork, run by hand. It does not publish a release and
+# needs no signing secrets: updater artifacts are turned off, and the app's own update
+# check is off by default so it never swaps this build for an official release.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-windows-build-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Read pinned Rust toolchain
+        id: rust-toolchain
+        shell: bash
+        run: |
+          channel=$(sed -nE 's/^channel *= *"([^"]+)".*/\1/p' rust-toolchain.toml)
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
+
+      - name: Setup pnpm
+        shell: bash
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+        run: |
+          corepack enable
+          corepack install
+          pnpm --version
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          pnpm tauri build --bundles msi -c '{\"bundle\":{\"createUpdaterArtifacts\":false}}'
+
+      - name: Collect installer and portable exe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = 'fork-windows'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item src-tauri/target/release/bundle/msi/*.msi $out
+          Copy-Item src-tauri/target/release/cc-switch.exe "$out/cc-switch-portable.exe"
+          Get-ChildItem $out | Format-Table Name, Length
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: cc-switch-windows-x64
+          path: fork-windows/*
+          retention-days: 30
