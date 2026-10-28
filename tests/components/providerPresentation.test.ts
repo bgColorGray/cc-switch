@@ -482,6 +482,34 @@ describe("buildAdditiveSections", () => {
     setDefault: vi.fn(),
   });
 
+  it("uses one CodeBuddy provider at a time and locks the built-in Official card", () => {
+    const actions = additiveActions();
+    const sections = buildAdditiveSections({
+      app: "codebuddy",
+      t,
+      providers: [official, relay, backup],
+      isInConfig: () => false,
+      codebuddyCurrentId: "relay",
+      actions,
+    });
+
+    expect(sections.map((s) => [s.key, s.items.length])).toEqual([["all", 3]]);
+    expect(item(sections, "relay").tone).toBe("direct");
+    expect(item(sections, "relay").buttons).toEqual([]);
+    expect(item(sections, "relay").deleteDisabledReason).toBe(
+      "providerCard.reason.inUseCannotDelete",
+    );
+    button(sections, "official", "switch").onClick();
+    expect(actions.add).toHaveBeenCalledWith(official);
+    expect(item(sections, "official").editDisabledReason).toBe(
+      "codebuddy.official.builtIn",
+    );
+    expect(item(sections, "official").deleteDisabledReason).toBe(
+      "codebuddy.official.builtIn",
+    );
+    expect(item(sections, "backup").deleteDisabledReason).toBeUndefined();
+  });
+
   it("splits added and available providers and keeps OMO to one at a time", () => {
     const omo = provider("omo", { category: "omo" });
     const otherOmo = provider("omo-2", { category: "omo" });

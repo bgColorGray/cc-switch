@@ -5514,15 +5514,38 @@ impl ProviderService {
         state.db.get_all_providers(app_type.as_str())
     }
 
+    /// The built-in CodeBuddy Official card only switches back to the products' own models.
+    fn ensure_codebuddy_card_editable(app_type: &AppType, id: &str) -> Result<(), AppError> {
+        if app_type == &AppType::CodeBuddy && id == crate::codebuddy_config::OFFICIAL_PROVIDER_ID {
+            return Err(AppError::InvalidInput(
+                "The built-in CodeBuddy / WorkBuddy Official card cannot be changed".into(),
+            ));
+        }
+        Ok(())
+    }
+
     /// CodeBuddy and WorkBuddy keep the full provider in the database; `models.json` only
-    /// tells whether it is added. Tagged entries without a row (e.g. after a reinstall) are
-    /// rebuilt from the file.
+    /// tells which one is in use. Tagged entries without a row (e.g. after a reinstall) are
+    /// rebuilt from the file, and the built-in Official card is always there.
     fn list_codebuddy(
         state: &AppState,
         app_type: &AppType,
     ) -> Result<IndexMap<String, Provider>, AppError> {
         let native = crate::codebuddy_config::get_providers()?;
         let mut saved = state.db.get_all_providers(app_type.as_str())?;
+        let official_id = crate::codebuddy_config::OFFICIAL_PROVIDER_ID;
+        if !saved.contains_key(official_id) {
+            let mut official = Provider::with_id(
+                official_id.into(),
+                "Official".into(),
+                serde_json::json!({ "kind": "official" }),
+                None,
+            );
+            official.category = Some("official".into());
+            official.sort_index = Some(0);
+            state.db.save_provider(app_type.as_str(), &official)?;
+            saved.shift_insert(0, official_id.into(), official);
+        }
         for (id, config) in &native {
             if !saved.contains_key(id) {
                 let name = config.get("name").and_then(Value::as_str).unwrap_or(id);
@@ -5533,7 +5556,11 @@ impl ProviderService {
             }
         }
         for (id, provider) in &mut saved {
-            let managed = native.contains_key(id);
+            let managed = if id == official_id {
+                native.is_empty()
+            } else {
+                native.contains_key(id)
+            };
             if Self::provider_live_config_managed(provider) != Some(managed) {
                 Self::set_provider_live_config_managed(provider, managed);
                 state.db.save_provider(app_type.as_str(), provider)?;
@@ -5552,6 +5579,9 @@ impl ProviderService {
     pub fn current(state: &AppState, app_type: AppType) -> Result<String, AppError> {
         if app_type == AppType::Kimi {
             return crate::kimi_config::current_provider();
+        }
+        if app_type == AppType::CodeBuddy {
+            return crate::codebuddy_config::current_provider();
         }
         // Additive mode apps have no "current" provider concept
         if app_type.is_additive_mode() {
@@ -5695,6 +5725,9 @@ impl ProviderService {
             return omp::add(state, provider, add_to_live);
         }
 
+        Self::ensure_codebuddy_card_editable(&app_type, &provider.id)?;
+        // Like Claude Code or Codex, a new CodeBuddy card waits until it is enabled.
+        let add_to_live = add_to_live && app_type != AppType::CodeBuddy;
         let mut provider = provider;
         Self::prepare_new_provider(&app_type, &mut provider)?;
         if app_type.is_additive_mode() {
@@ -6262,6 +6295,8 @@ impl ProviderService {
         original_id: Option<&str>,
         provider: Provider,
     ) -> Result<bool, AppError> {
+        Self::ensure_codebuddy_card_editable(&app_type, original_id.unwrap_or(&provider.id))?;
+        Self::ensure_codebuddy_card_editable(&app_type, &provider.id)?;
         let mut provider = provider;
         if app_type == AppType::Kimi {
             // Official cards come from signing in. Their models, name and notes are
@@ -6576,6 +6611,7 @@ impl ProviderService {
     /// 直连指针或代理路由指着的供应商不能删（见 `mode::current::is_referenced`）。
     /// 对于累加模式应用（OpenCode, OpenClaw），可以随时删除任意供应商，同时从 live 配置中移除。
     pub fn delete(state: &AppState, app_type: AppType, id: &str) -> Result<(), AppError> {
+        Self::ensure_codebuddy_card_editable(&app_type, id)?;
         if app_type == AppType::Pi {
             return pi::delete(state, id);
         }
@@ -6723,6 +6759,7 @@ impl ProviderService {
         if app_type == AppType::Pi {
             return pi::remove(state, id);
         }
+        Self::ensure_codebuddy_card_editable(&app_type, id)?;
         if matches!(app_type, AppType::CodeBuddy) {
             return crate::codebuddy_config::save_and_commit(id, None, false, || {
                 if let Some(mut provider) = state.db.get_provider_by_id(id, app_type.as_str())? {
@@ -6894,6 +6931,11 @@ impl ProviderService {
 
         if app_type == AppType::Omp {
             return omp::enable(state, id);
+        }
+
+        if app_type == AppType::CodeBuddy && id == crate::codebuddy_config::OFFICIAL_PROVIDER_ID {
+            crate::codebuddy_config::use_official_and_commit(|| Ok(()))?;
+            return Ok(SwitchResult::default());
         }
 
         // Check if provider exists

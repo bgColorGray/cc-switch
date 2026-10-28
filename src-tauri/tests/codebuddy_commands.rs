@@ -2,6 +2,8 @@ use cc_switch_lib::{AppType, Provider, ProviderService};
 use serde_json::{json, Value};
 use std::{ffi::OsString, fs, path::PathBuf};
 
+const OFFICIAL: &str = "codebuddy-official";
+
 #[path = "support.rs"]
 mod support;
 use support::{create_test_state, reset_test_fs, test_mutex};
@@ -71,8 +73,12 @@ fn managed(state: &cc_switch_lib::AppState, id: &str) -> Option<bool> {
         .and_then(|meta| meta.live_config_managed)
 }
 
+fn current(state: &cc_switch_lib::AppState) -> String {
+    ProviderService::current(state, AppType::CodeBuddy).unwrap()
+}
+
 #[test]
-fn one_provider_drives_codebuddy_and_workbuddy_and_hides_official_models() {
+fn one_provider_at_a_time_drives_both_products_and_official_restores_them() {
     let _guard = test_mutex().lock().unwrap();
     reset_test_fs();
     let code = BuddyHome::new("CODEBUDDY_CONFIG_DIR");
@@ -84,10 +90,16 @@ fn one_provider_drives_codebuddy_and_workbuddy_and_hides_official_models() {
     )
     .unwrap();
 
-    ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "glm-5.3"), false).unwrap();
+    let official = ProviderService::list(&state, AppType::CodeBuddy).unwrap()[OFFICIAL].clone();
+    assert_eq!(official.category.as_deref(), Some("official"));
+    assert_eq!(current(&state), OFFICIAL);
+
+    // Adding never switches, even when asked to write the live files.
+    ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "glm-5.3"), true).unwrap();
     assert_eq!(ids(&code.read()), ["mine"]);
     assert!(!work.models_json().exists());
     assert_eq!(managed(&state, "gw"), Some(false));
+    assert_eq!(current(&state), OFFICIAL);
 
     ProviderService::switch(&state, AppType::CodeBuddy, "gw").unwrap();
     let document = code.read();
@@ -106,35 +118,48 @@ fn one_provider_drives_codebuddy_and_workbuddy_and_hides_official_models() {
         workbuddy["availableModels"],
         json!(["custom-local:glm-5.3"])
     );
+    assert_eq!(current(&state), "gw");
     assert_eq!(managed(&state, "gw"), Some(true));
+    assert_eq!(managed(&state, OFFICIAL), Some(false));
 
-    let mut edited = ProviderService::list(&state, AppType::CodeBuddy).unwrap()["gw"].clone();
+    ProviderService::add(
+        &state,
+        AppType::CodeBuddy,
+        provider("other", "kimi-k3"),
+        false,
+    )
+    .unwrap();
+    ProviderService::switch(&state, AppType::CodeBuddy, "other").unwrap();
+    assert_eq!(ids(&code.read()), ["mine", "kimi-k3"]);
+    assert_eq!(ids(&work.read()), ["kimi-k3"]);
+    assert_eq!(current(&state), "other");
+    assert_eq!(managed(&state, "gw"), Some(false));
+
+    let mut edited = ProviderService::list(&state, AppType::CodeBuddy).unwrap()["other"].clone();
     edited.settings_config["models"] = json!({"deepseek-v4.1-flash": {"name": "Flash"}});
     ProviderService::update(&state, AppType::CodeBuddy, None, edited).unwrap();
     assert_eq!(ids(&code.read()), ["mine", "deepseek-v4.1-flash"]);
     assert_eq!(ids(&work.read()), ["deepseek-v4.1-flash"]);
 
     assert!(
-        ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "x"), true).is_err(),
+        ProviderService::add(&state, AppType::CodeBuddy, provider("gw", "x"), false).is_err(),
         "duplicate provider key"
     );
-    assert!(
-        ProviderService::add(&state, AppType::CodeBuddy, provider("other", "mine"), true).is_err(),
-        "model id owned by the user"
-    );
+    assert!(ProviderService::delete(&state, AppType::CodeBuddy, OFFICIAL).is_err());
+    assert!(ProviderService::update(&state, AppType::CodeBuddy, None, official).is_err());
 
-    ProviderService::remove_from_live_config(&state, AppType::CodeBuddy, "gw").unwrap();
+    ProviderService::switch(&state, AppType::CodeBuddy, OFFICIAL).unwrap();
     let restored = code.read();
     assert_eq!(ids(&restored), ["mine"]);
     assert_eq!(restored["availableModels"], json!(["mine", "hy3"]));
     let workbuddy = work.read();
     assert_eq!(ids(&workbuddy), Vec::<String>::new());
     assert!(workbuddy.get("availableModels").is_none());
-    assert_eq!(managed(&state, "gw"), Some(false));
+    assert_eq!(current(&state), OFFICIAL);
+    assert_eq!(managed(&state, OFFICIAL), Some(true));
+    assert_eq!(managed(&state, "other"), Some(false));
 
-    ProviderService::switch(&state, AppType::CodeBuddy, "gw").unwrap();
     ProviderService::delete(&state, AppType::CodeBuddy, "gw").unwrap();
-    assert_eq!(code.read()["availableModels"], json!(["mine", "hy3"]));
     assert!(!ProviderService::list(&state, AppType::CodeBuddy)
         .unwrap()
         .contains_key("gw"));

@@ -6,9 +6,11 @@
 //! each tagged with [`MARKER`]. Untagged entries belong to the user or to the product itself
 //! (WorkBuddy keeps its local models there) and are never changed.
 //!
-//! While any provider is added, `availableModels` lists only the custom models, so the
-//! products' built-in (official) models leave the model picker and cannot be picked by
-//! mistake. Both products expose custom models as `custom-local:<id>` (keeping `<id>` as an
+//! Like Claude Code or Codex, one provider is in use at a time: enabling one replaces the
+//! previous provider's entries, and the built-in Official card ([`OFFICIAL_PROVIDER_ID`])
+//! removes them all. While a provider is in use, `availableModels` lists only the custom
+//! models, so the products' built-in (official) models leave the model picker and cannot be
+//! picked by mistake. Both products expose custom models as `custom-local:<id>` (keeping `<id>` as an
 //! alias, so `--model <id>` still resolves to them once the built-in one is hidden). The list
 //! the user had before is kept in a sidecar file and restored when the last provider leaves.
 use crate::config::{atomic_write_private, get_home_dir};
@@ -21,6 +23,8 @@ use std::{
     sync::Mutex,
 };
 
+/// The built-in card that means "no custom provider": the products' own models.
+pub(crate) const OFFICIAL_PROVIDER_ID: &str = "codebuddy-official";
 /// Field that ties a `models.json` entry to the cc-switch provider key that wrote it.
 const MARKER: &str = "ccSwitchProvider";
 /// Prefix both products give custom model ids in their model lists.
@@ -350,14 +354,16 @@ enum SavedAllowList {
     Remove,
 }
 
-/// Replace (or with `None` remove) every entry tagged `id`, keeping all other entries, then
-/// recompute `availableModels`. `saved` is the sidecar's content (see [`read_saved_allow_list`]).
+/// Replace (or with `None` remove) every entry tagged `id`, then recompute `availableModels`.
+/// `exclusive` also drops every other provider's entries; the user's own entries always stay.
+/// `saved` is the sidecar's content (see [`read_saved_allow_list`]).
 fn apply(
     file: &Path,
     mut document: Map<String, Value>,
     id: &str,
     config: Option<&Value>,
     create: bool,
+    exclusive: bool,
     saved: Option<&Value>,
 ) -> Result<(Map<String, Value>, SavedAllowList), AppError> {
     let models = models_of(&document);
@@ -368,7 +374,10 @@ fn apply(
     }
     let mut kept: Vec<Value> = models
         .iter()
-        .filter(|entry| owner_of(entry) != Some(id))
+        .filter(|entry| match owner_of(entry) {
+            Some(owner) => !exclusive && owner != id,
+            None => true,
+        })
         .cloned()
         .collect();
     let added: Vec<Value> = config
@@ -488,15 +497,43 @@ fn write_plans_and_commit<'a, T>(plans: &'a [Plan], commit: Commit<'a, T>) -> Re
     }
 }
 
-/// Write the provider's models to both products (or remove them with `None`), then run
-/// `commit`; the files are restored when anything fails.
+/// Make the provider the only one in both products (or remove it with `None`, which leaves
+/// the official setup once nothing else is there), then run `commit`; the files are restored
+/// when anything fails.
 pub(crate) fn save_and_commit<T>(
     id: &str,
     config: Option<Value>,
     create: bool,
     commit: impl FnOnce() -> Result<T, AppError>,
 ) -> Result<T, AppError> {
-    save_dirs_and_commit(&model_dirs(), id, config, create, commit)
+    let exclusive = config.is_some();
+    save_dirs_and_commit(&model_dirs(), id, config, create, exclusive, commit)
+}
+
+/// Switch both products back to their official models: every provider's entries go and the
+/// user's own allow-list comes back.
+pub(crate) fn use_official_and_commit<T>(
+    commit: impl FnOnce() -> Result<T, AppError>,
+) -> Result<T, AppError> {
+    save_dirs_and_commit(
+        &model_dirs(),
+        OFFICIAL_PROVIDER_ID,
+        None,
+        false,
+        true,
+        commit,
+    )
+}
+
+/// The provider whose models the products currently use, or [`OFFICIAL_PROVIDER_ID`].
+pub(crate) fn current_provider() -> Result<String, AppError> {
+    for dir in model_dirs() {
+        let document = read_document(&dir.join("models.json"))?;
+        if let Some(owner) = models_of(&document).iter().find_map(owner_of) {
+            return Ok(owner.to_string());
+        }
+    }
+    Ok(OFFICIAL_PROVIDER_ID.to_string())
 }
 
 fn save_dirs_and_commit<T>(
@@ -504,6 +541,7 @@ fn save_dirs_and_commit<T>(
     id: &str,
     config: Option<Value>,
     create: bool,
+    exclusive: bool,
     commit: impl FnOnce() -> Result<T, AppError>,
 ) -> Result<T, AppError> {
     if let Some(config) = &config {
@@ -526,6 +564,7 @@ fn save_dirs_and_commit<T>(
             id,
             config.as_ref(),
             create,
+            exclusive,
             saved.as_ref(),
         )?;
         plans.push(Plan {
@@ -580,7 +619,55 @@ mod tests {
         config: Option<&Value>,
         saved: Option<&Value>,
     ) -> (Map<String, Value>, SavedAllowList) {
-        apply(Path::new("models.json"), document, id, config, false, saved).unwrap()
+        apply(
+            Path::new("models.json"),
+            document,
+            id,
+            config,
+            false,
+            config.is_some(),
+            saved,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn enabling_a_provider_replaces_the_previous_one_but_keeps_user_entries() {
+        let start = document(
+            r#"{"models":[{"id":"mine"},{"id":"old-model","ccSwitchProvider":"old"}],"availableModels":["custom-local:mine","custom-local:old-model"]}"#,
+        );
+        let (next, sidecar) = run(start, "gw", Some(&provider()), Some(&Value::Null));
+        assert_eq!(sidecar, SavedAllowList::Keep);
+        let ids: Vec<_> = models_of(&next).iter().map(|e| str_at(e, "/id")).collect();
+        assert_eq!(ids, ["mine", "glm-5.3", "deepseek-v4.1-flash"]);
+        assert_eq!(
+            next["availableModels"],
+            json!([
+                "custom-local:mine",
+                "custom-local:glm-5.3",
+                "custom-local:deepseek-v4.1-flash"
+            ])
+        );
+    }
+
+    #[test]
+    fn official_removes_every_provider_and_restores_the_allow_list() {
+        let start = document(
+            r#"{"models":[{"id":"mine"},{"id":"a","ccSwitchProvider":"one"},{"id":"b","ccSwitchProvider":"two"}],"availableModels":["custom-local:a"]}"#,
+        );
+        let (next, sidecar) = apply(
+            Path::new("models.json"),
+            start,
+            OFFICIAL_PROVIDER_ID,
+            None,
+            false,
+            true,
+            Some(&json!(["hy3"])),
+        )
+        .unwrap();
+        assert_eq!(sidecar, SavedAllowList::Remove);
+        assert_eq!(next["models"], json!([{ "id": "mine" }]));
+        assert_eq!(next["availableModels"], json!(["hy3"]));
     }
 
     #[test]
@@ -697,11 +784,21 @@ mod tests {
     fn refuses_model_ids_owned_by_someone_else_and_duplicate_keys() {
         let path = Path::new("models.json");
         let existing = document(r#"{"models":[{"id":"glm-5.3"}]}"#);
-        let error = apply(path, existing, "gw", Some(&provider()), true, None).unwrap_err();
+        let error = apply(path, existing, "gw", Some(&provider()), true, true, None).unwrap_err();
         assert!(error.to_string().contains("added yourself"), "{error}");
         let (mine, _) = run(Map::new(), "gw", Some(&provider()), None);
-        assert!(apply(path, mine.clone(), "gw", Some(&provider()), true, None).is_err());
-        let error = apply(path, mine, "other", Some(&provider()), true, None).unwrap_err();
+        assert!(apply(
+            path,
+            mine.clone(),
+            "gw",
+            Some(&provider()),
+            true,
+            true,
+            None
+        )
+        .is_err());
+        // Only a non-exclusive write can meet another provider's entries.
+        let error = apply(path, mine, "other", Some(&provider()), true, false, None).unwrap_err();
         assert!(error.to_string().contains("provider 'gw'"), "{error}");
     }
 
@@ -730,16 +827,17 @@ mod tests {
         let dirs = [root.path().join("code"), root.path().join("work")];
         fs::create_dir_all(&dirs[0]).unwrap();
         fs::write(dirs[0].join("models.json"), r#"{"models":[{"id":"mine"}]}"#).unwrap();
-        save_dirs_and_commit(&dirs, "gw", Some(provider()), true, || Ok(())).unwrap();
+        save_dirs_and_commit(&dirs, "gw", Some(provider()), true, true, || Ok(())).unwrap();
         let code = fs::read_to_string(dirs[0].join("models.json")).unwrap();
         let work = fs::read_to_string(dirs[1].join("models.json")).unwrap();
         assert!(code.contains("\"ccSwitchProvider\": \"gw\""));
         assert!(work.contains("\"ccSwitchProvider\": \"gw\""));
         assert!(dirs[0].join(SAVED_ALLOW_LIST_FILE).exists());
 
-        let failed: Result<(), AppError> = save_dirs_and_commit(&dirs, "gw", None, false, || {
-            Err(AppError::Message("db down".into()))
-        });
+        let failed: Result<(), AppError> =
+            save_dirs_and_commit(&dirs, "gw", None, false, false, || {
+                Err(AppError::Message("db down".into()))
+            });
         assert!(failed.is_err());
         assert_eq!(
             fs::read_to_string(dirs[0].join("models.json")).unwrap(),
@@ -754,7 +852,7 @@ mod tests {
             "rollback keeps the sidecar"
         );
 
-        save_dirs_and_commit(&dirs, "gw", None, false, || Ok(())).unwrap();
+        save_dirs_and_commit(&dirs, "gw", None, false, false, || Ok(())).unwrap();
         let restored = read_document(&dirs[0].join("models.json")).unwrap();
         assert_eq!(restored["models"], json!([{ "id": "mine" }]));
         assert!(restored.get("availableModels").is_none());
@@ -768,7 +866,9 @@ mod tests {
         let dirs = [root.path().join("code"), root.path().join("work")];
         fs::create_dir_all(&dirs[1]).unwrap();
         fs::write(dirs[1].join("models.json"), "{ not json").unwrap();
-        assert!(save_dirs_and_commit(&dirs, "gw", Some(provider()), true, || Ok(())).is_err());
+        assert!(
+            save_dirs_and_commit(&dirs, "gw", Some(provider()), true, true, || Ok(())).is_err()
+        );
         assert!(!dirs[0].join("models.json").exists());
         assert_eq!(
             fs::read_to_string(dirs[1].join("models.json")).unwrap(),

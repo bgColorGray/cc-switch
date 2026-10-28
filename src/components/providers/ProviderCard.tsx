@@ -642,7 +642,8 @@ export function ProviderCard({
             onEdit={() => onEdit(provider)}
             onDelete={() => onDelete(provider)}
             onDuplicate={
-              onDuplicate && !(appId === "kimi" && isOfficial)
+              onDuplicate &&
+              !((appId === "kimi" || appId === "codebuddy") && isOfficial)
                 ? () => onDuplicate(provider)
                 : undefined
             }

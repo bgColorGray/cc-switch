@@ -382,6 +382,7 @@ export function ProviderList({
         isHermesReadOnlyProvider(provider.settingsConfig),
       piStateUnavailable: isPiFamilyApp(appId) && !isPiStateReady,
       kimiCurrentId: currentProviderId,
+      codebuddyCurrentId: currentProviderId,
       actions: {
         add: onSwitch,
         remove: (provider) =>

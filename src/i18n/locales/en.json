@@ -5086,6 +5086,9 @@
     },
     "presets": {
       "selfHostedGateway": "Self-hosted Gateway"
+    },
+    "official": {
+      "builtIn": "Built-in official setup: when enabled, CodeBuddy / WorkBuddy use their official models. It cannot be edited or deleted"
     }
   }
 }

@@ -5087,6 +5087,9 @@
     },
     "presets": {
       "selfHostedGateway": "自建閘道"
+    },
+    "official": {
+      "builtIn": "內建的官方設定：啟用後 CodeBuddy / WorkBuddy 使用官方模型。不能編輯或刪除"
     }
   }
 }

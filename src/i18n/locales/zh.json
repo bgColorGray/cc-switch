@@ -5086,6 +5086,9 @@
     },
     "presets": {
       "selfHostedGateway": "自建网关"
+    },
+    "official": {
+      "builtIn": "内置的官方配置：启用后 CodeBuddy / WorkBuddy 使用官方模型。不能编辑或删除"
     }
   }
 }

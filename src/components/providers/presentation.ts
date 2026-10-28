@@ -700,6 +700,8 @@ export interface AdditiveInput {
   piStateUnavailable?: boolean;
   /** Kimi：原生 default_model 别名所属的供应商。 */
   kimiCurrentId?: string | null;
+  /** CodeBuddy / WorkBuddy：models.json 里正在用的那家（没有就是内置的官方卡）。 */
+  codebuddyCurrentId?: string | null;
   actions: {
     add: (provider: Provider) => void;
     remove: (provider: Provider) => void;
@@ -708,8 +710,60 @@ export interface AdditiveInput {
   };
 }
 
+/**
+ * CodeBuddy / WorkBuddy：存储和共存式应用一样，用起来像 Claude Code / Codex——同一时间只用
+ * 一家，内置的官方卡就是「不用自定义模型」，不能编辑或删除。
+ */
+function buildCodebuddySections(input: AdditiveInput): ProviderSection[] {
+  const { t, providers, actions } = input;
+  return [
+    {
+      key: "all",
+      items: providers.map((p) => {
+        const official = p.category === "official";
+        const current = p.id === input.codebuddyCurrentId;
+        const builtIn = official ? t("codebuddy.official.builtIn") : undefined;
+        return {
+          provider: p,
+          presentation: {
+            tone: current ? "direct" : undefined,
+            status: current
+              ? { label: t("providerCard.status.inUse"), dot: "direct" }
+              : undefined,
+            chips: official
+              ? [
+                  {
+                    key: "official",
+                    label: t("providerCard.chip.official"),
+                    tone: "outline",
+                  },
+                ]
+              : [],
+            buttons: current
+              ? []
+              : [
+                  {
+                    key: "switch",
+                    label: t("providerCard.action.switch"),
+                    onClick: () => actions.add(p),
+                  },
+                ],
+            editDisabledReason: builtIn,
+            deleteDisabledReason:
+              builtIn ??
+              (current
+                ? t("providerCard.reason.inUseCannotDelete")
+                : undefined),
+          },
+        };
+      }),
+    },
+  ];
+}
+
 export function buildAdditiveSections(input: AdditiveInput): ProviderSection[] {
   const { app, t, providers, actions } = input;
+  if (app === "codebuddy") return buildCodebuddySections(input);
   const added: ProviderSection["items"] = [];
   const available: ProviderSection["items"] = [];
   const piBlocked =

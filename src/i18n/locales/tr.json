@@ -5042,6 +5042,9 @@
     },
     "presets": {
       "selfHostedGateway": "Kendi Barındırılan Ağ Geçidi"
+    },
+    "official": {
+      "builtIn": "Yerleşik resmi yapılandırma: etkinleştirildiğinde CodeBuddy / WorkBuddy resmi modellerini kullanır. Düzenlenemez veya silinemez"
     }
   }
 }

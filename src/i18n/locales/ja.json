@@ -5086,6 +5086,9 @@
     },
     "presets": {
       "selfHostedGateway": "セルフホストゲートウェイ"
+    },
+    "official": {
+      "builtIn": "組み込みの公式設定：有効にすると CodeBuddy / WorkBuddy は公式モデルを使います。編集・削除はできません"
     }
   }
 }
