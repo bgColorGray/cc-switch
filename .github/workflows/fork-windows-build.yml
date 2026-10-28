@@ -54,7 +54,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          pnpm tauri build --bundles msi -c '{\"bundle\":{\"createUpdaterArtifacts\":false}}'
+          # A config file, not inline JSON: PowerShell strips the quotes from native arguments
+          Set-Content -Path fork-build.conf.json -Value '{"bundle":{"createUpdaterArtifacts":false}}' -Encoding utf8NoBOM
+          pnpm tauri build --bundles msi -c fork-build.conf.json
 
       - name: Collect installer and portable exe
         shell: pwsh
