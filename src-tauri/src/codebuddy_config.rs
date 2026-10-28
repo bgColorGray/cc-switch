@@ -85,30 +85,41 @@ fn model_dirs() -> Vec<PathBuf> {
 }
 
 fn read_document(path: &Path) -> Result<Map<String, Value>, AppError> {
-    let text = match fs::read_to_string(path) {
-        Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Map::new()),
-        Err(error) => return Err(AppError::io(path, error)),
-    };
+    match fs::read_to_string(path) {
+        Ok(text) => parse_document(path, &text),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Map::new()),
+        Err(error) => Err(AppError::io(path, error)),
+    }
+}
+
+/// Reads `models.json` the way the products do (`parseModelsJson`): a root that is not an
+/// object (`null`, `[]`, ...) counts as an empty file and a non-array `models` as no models,
+/// since the products would replace them on their own next save.
+fn parse_document(path: &Path, text: &str) -> Result<Map<String, Value>, AppError> {
     if text.trim().is_empty() {
         return Ok(Map::new());
     }
-    let document: Value = serde_json::from_str(&text)
+    let document: Value = serde_json::from_str(text)
         .map_err(|error| AppError::Config(format!("Invalid {}: {error}", path.display())))?;
     let Value::Object(document) = document else {
-        return Err(AppError::Config(format!(
-            "{} must be a JSON object",
+        log::warn!(
+            "{} is not a JSON object; treating it as empty",
             path.display()
-        )));
+        );
+        return Ok(Map::new());
     };
     if document
         .get("models")
         .is_some_and(|models| !models.is_array())
     {
-        return Err(AppError::Config(format!(
-            "{}: \"models\" must be an array",
+        log::warn!(
+            "{}: \"models\" is not an array; ignoring it",
             path.display()
-        )));
+        );
+        return Ok(document
+            .into_iter()
+            .filter(|(key, _)| key != "models")
+            .collect());
     }
     Ok(document)
 }
@@ -570,6 +581,34 @@ mod tests {
         saved: Option<&Value>,
     ) -> (Map<String, Value>, SavedAllowList) {
         apply(Path::new("models.json"), document, id, config, false, saved).unwrap()
+    }
+
+    #[test]
+    fn non_object_roots_read_as_empty_like_the_products() {
+        for text in ["null", "[]", "[{\"id\":\"x\"}]", "\"text\"", "3", "  "] {
+            assert!(
+                parse_document(Path::new("models.json"), text)
+                    .unwrap()
+                    .is_empty(),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn non_array_models_are_dropped_and_other_keys_kept() {
+        let parsed = parse_document(
+            Path::new("models.json"),
+            r#"{"models":{},"availableModels":["a"]}"#,
+        )
+        .unwrap();
+        assert!(parsed.get("models").is_none());
+        assert_eq!(parsed["availableModels"], json!(["a"]));
+    }
+
+    #[test]
+    fn invalid_json_is_still_an_error() {
+        assert!(parse_document(Path::new("models.json"), "{models:").is_err());
     }
 
     #[test]
